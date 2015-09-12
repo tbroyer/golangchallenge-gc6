@@ -196,7 +196,8 @@ func (m *Maze) SetStartPoint(x, y int) error {
 	}
 
 	r.Start = true
-	m.icarus = mazelib.Coordinate{x, y}
+	m.start = mazelib.Coordinate{x, y}
+	m.icarus = m.start
 	return nil
 }
 
