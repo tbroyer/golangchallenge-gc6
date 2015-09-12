@@ -257,6 +257,7 @@ func (m *Maze) MoveLeft() error {
 
 	m.icarus = mazelib.Coordinate{x - 1, y}
 	m.StepsTaken++
+	m.rooms[y][x-1].Visited = true
 	return nil
 }
 
@@ -278,6 +279,7 @@ func (m *Maze) MoveRight() error {
 
 	m.icarus = mazelib.Coordinate{x + 1, y}
 	m.StepsTaken++
+	m.rooms[y][x+1].Visited = true
 	return nil
 }
 
@@ -299,6 +301,7 @@ func (m *Maze) MoveUp() error {
 
 	m.icarus = mazelib.Coordinate{x, y - 1}
 	m.StepsTaken++
+	m.rooms[y-1][x].Visited = true
 	return nil
 }
 
@@ -320,6 +323,7 @@ func (m *Maze) MoveDown() error {
 
 	m.icarus = mazelib.Coordinate{x, y + 1}
 	m.StepsTaken++
+	m.rooms[y+1][x].Visited = true
 	return nil
 }
 
