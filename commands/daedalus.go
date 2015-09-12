@@ -139,6 +139,8 @@ func MoveDirection(c *gin.Context) {
 		return
 	}
 
+	mazelib.PrintMaze(currentMaze)
+
 	s, e := currentMaze.LookAround()
 
 	if e != nil {
@@ -146,6 +148,7 @@ func MoveDirection(c *gin.Context) {
 			scores = append(scores, currentMaze.StepsTaken)
 			r.Victory = true
 			r.Message = fmt.Sprintf("Victory achieved in %d steps \n", currentMaze.StepsTaken)
+			mazelib.PrintMaze(currentMaze)
 		} else {
 			r.Error = true
 			r.Message = err.Error()
