@@ -166,7 +166,11 @@ func PrintMaze(m MazeI) {
 			if s.Right {
 				str += "|"
 			} else {
-				str += "_"
+				if s.Bottom {
+					str += "_"
+				} else {
+					str += " "
+				}
 			}
 
 		}
