@@ -139,6 +139,9 @@ func PrintMaze(m MazeI) {
 				fmt.Println(err)
 				os.Exit(-1)
 			}
+			if r.Visited {
+				str += "\x1b[41m"
+			}
 			if s.Bottom {
 				if r.Treasure {
 					str += "⏅_"
@@ -155,6 +158,9 @@ func PrintMaze(m MazeI) {
 				} else {
 					str += "  "
 				}
+			}
+			if r.Visited {
+				str += "\x1b[0m"
 			}
 
 			if s.Right {
