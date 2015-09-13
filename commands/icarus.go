@@ -118,52 +118,118 @@ func ToReply(in []byte) mazelib.Reply {
 
 func solveMaze() {
 	s := awake()
-	// Wall follower
-	dir := rand.Intn(4) + 1
+
+	// We want to find one solution in the fewest possible steps, while being
+	// "blind" about the maze. This means we need an algorithm focused on "us"
+	// (i.e. not the maze) working from inside the maze and fast.
+	// So let's use Trémaux's algorithm.
+
+	// We don't know our exact coordinates in the maze, so start at 0,0 and go positive and negative
+	solver := &solver{
+		junctions:     make(map[mazelib.Coordinate]bool),
+		horizPassages: make(map[mazelib.Coordinate]int),
+		vertPassages:  make(map[mazelib.Coordinate]int),
+	}
+	// mark the current coordinate (0,0) as visited
+	solver.junctions[solver.coord] = true
 	for true {
-		dir = chooseDir(s, dir)
+		// Choose a new passage at random
+		dir := solver.chooseDir(s)
 		var err error
-		s, err = moveDir(dir)
+		s, err = solver.moveDir(s, dir)
 		if err == mazelib.ErrVictory {
 			return
 		}
 	}
 }
 
-func canMove(s mazelib.Survey, dir int) bool {
-	switch dir {
-	case mazelib.N:
-		return !s.Top
-	case mazelib.S:
-		return !s.Bottom
-	case mazelib.E:
-		return !s.Right
-	case mazelib.W:
-		return !s.Left
-	}
-	panic("dir out of range")
+type solver struct {
+	coord mazelib.Coordinate // current coordinates
+	// we need to track both visited junctions and visited passages.
+	junctions     map[mazelib.Coordinate]bool // visited junctions
+	horizPassages map[mazelib.Coordinate]int  // passages to the right of the coordinate
+	vertPassages  map[mazelib.Coordinate]int  // passages to the bottom of the coordinate
 }
 
-func moveDir(dir int) (mazelib.Survey, error) {
+func (s *solver) moveDir(sv mazelib.Survey, dir int) (mazelib.Survey, error) {
+	var newCoord, passage mazelib.Coordinate
+	var passageMap map[mazelib.Coordinate]int
+	var dirStr string
+
 	switch dir {
 	case mazelib.N:
-		return Move("up")
+		newCoord = mazelib.Coordinate{s.coord.X, s.coord.Y - 1}
+		passage = newCoord
+		passageMap = s.vertPassages
+		dirStr = "up"
 	case mazelib.S:
-		return Move("down")
+		newCoord = mazelib.Coordinate{s.coord.X, s.coord.Y + 1}
+		passage = s.coord
+		passageMap = s.vertPassages
+		dirStr = "down"
 	case mazelib.E:
-		return Move("right")
+		newCoord = mazelib.Coordinate{s.coord.X + 1, s.coord.Y}
+		passage = s.coord
+		passageMap = s.horizPassages
+		dirStr = "right"
 	case mazelib.W:
-		return Move("left")
+		newCoord = mazelib.Coordinate{s.coord.X - 1, s.coord.Y}
+		passage = newCoord
+		passageMap = s.horizPassages
+		dirStr = "left"
+	default:
+		panic("dir out of range")
 	}
-	panic("dir out of range")
+
+	// "If you're walking down a new passage and encounter a junction you have
+	// visited before, treat it like a dead end and go back the way you came."
+	if passageMap[passage] == 0 && s.junctions[newCoord] {
+		// Use our knowledge of the maze, this saves us 2 moves on the server
+		passageMap[passage] += 2
+		return sv, nil
+	}
+
+	s.coord = newCoord
+	s.junctions[newCoord] = true
+	passageMap[passage]++
+	return Move(dirStr)
 }
 
-func chooseDir(s mazelib.Survey, dir int) int {
-	for i := -1; i < 4; i++ {
-		d := ((4 + dir - 1 + i) % 4) + 1
-		if canMove(s, d) {
+func (s *solver) chooseDir(sv mazelib.Survey) int {
+	for w := 0; true; w++ {
+		d, err := s.chooseDirWeighted(sv, w)
+		if err == nil {
 			return d
 		}
 	}
-	panic("fully closed cell")
+	panic("fully closed cell?")
+}
+
+func (s *solver) chooseDirWeighted(sv mazelib.Survey, w int) (int, error) {
+	for d := range rand.Perm(4) {
+		var wall bool
+		var passage int
+
+		dir := d + 1
+		switch dir {
+		case mazelib.N:
+			wall = sv.Top
+			passage = s.vertPassages[mazelib.Coordinate{s.coord.X, s.coord.Y - 1}]
+		case mazelib.S:
+			wall = sv.Bottom
+			passage = s.vertPassages[s.coord]
+		case mazelib.E:
+			wall = sv.Right
+			passage = s.horizPassages[s.coord]
+		case mazelib.W:
+			wall = sv.Left
+			passage = s.horizPassages[mazelib.Coordinate{s.coord.X - 1, s.coord.Y}]
+		}
+
+		if !wall && passage <= w {
+			return dir, nil
+		}
+	}
+
+	return 0, errors.New("not found")
 }
