@@ -364,14 +364,96 @@ func fullMaze() *Maze {
 	return z
 }
 
-// TODO: Write your maze creator function here
 func createMaze() *Maze {
 
-	// TODO: Fill in the maze:
-	// You need to insert a startingPoint for Icarus
-	// You need to insert an EndingPoint (treasure) for Icarus
-	// You need to Add and Remove walls as needed.
-	// Use the mazelib.AddWall & mazelib.RmWall to do this
+	// Icarus' goal is to find the solution in as few steps as possible,
+	// so we'll want as much "river" as possible (few, but long dead ends).
+	// So let's use the "recursive backtracker" algorithm.
 
-	return emptyMaze()
+	m := fullMaze()
+	// TODO: insert starting point and treasure in opposite "quadrants" of the maze?
+	sx, sy := randomPosition(m.Width(), m.Height())
+	m.SetStartPoint(sx, sy)
+	tx, ty := randomPosition(m.Width(), m.Height())
+	for err := m.SetTreasure(tx, ty); err == nil; {
+		tx, ty = randomPosition(m.Width(), m.Height())
+		err = m.SetTreasure(tx, ty)
+	}
+
+	s := make([]mazelib.Coordinate, 0, m.Width()*m.Height())
+	x, y := randomPosition(m.Width(), m.Height())
+	s = append(s, mazelib.Coordinate{X: x, Y: y})
+	r, _ := m.GetRoom(x, y)
+	r.Visited = true
+OuterLoop:
+	for len(s) > 0 {
+		for _, d := range rand.Perm(4) {
+			dir := d + 1
+			x1, y1 := move(x, y, dir)
+			r, err := m.GetRoom(x1, y1)
+			if err != nil {
+				continue
+			}
+			if r.Visited {
+				continue
+			}
+			s = append(s, mazelib.Coordinate{X: x1, Y: y1})
+			r.Visited = true
+			carve(m, x, y, r, dir)
+			continue OuterLoop
+		}
+		// no uncarved adjacent cell
+		c := s[len(s)-1]
+		x, y = c.X, c.Y
+		s = s[:len(s)-1]
+	}
+
+	// reset Visited flag
+	for y := 0; y < m.Height(); y++ {
+		for x := 0; x < m.Width(); x++ {
+			m.rooms[y][x].Visited = false
+		}
+	}
+	// mark the starting point as Visited
+	m.rooms[sy][sx].Visited = true
+	return m
+}
+
+// Pick a position at random in the maze.
+func randomPosition(w, h int) (int, int) {
+	t := rand.Intn(w * h)
+	return t / w, t % h
+}
+
+// Compute the target coordinates when moving one step from (x, y) in
+// direction 'dir'.
+func move(x, y, dir int) (int, int) {
+	switch dir {
+	case mazelib.N:
+		return x, y - 1
+	case mazelib.S:
+		return x, y + 1
+	case mazelib.E:
+		return x + 1, y
+	case mazelib.W:
+		return x - 1, y
+	}
+	panic("dir out of range")
+}
+
+// Carve a passage in direction 'dir' from the room at (x, y);
+// 'r' is the target room
+func carve(m *Maze, x, y int, r *mazelib.Room, dir int) {
+	switch dir {
+	case mazelib.N:
+		r.RmWall(mazelib.S)
+	case mazelib.S:
+		r.RmWall(mazelib.N)
+	case mazelib.E:
+		r.RmWall(mazelib.W)
+	case mazelib.W:
+		r.RmWall(mazelib.E)
+	}
+	r2, _ := m.GetRoom(x, y)
+	r2.RmWall(dir)
 }
