@@ -20,6 +20,7 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
+	"math/rand"
 	"net/http"
 
 	"github.com/spf13/cobra"
@@ -115,12 +116,54 @@ func ToReply(in []byte) mazelib.Reply {
 	return *res
 }
 
-// TODO: This is where you work your magic
 func solveMaze() {
-	_ = awake() // Need to start with waking up to initialize a new maze
-	// You'll probably want to set this to a named value and start by figuring
-	// out which step to take next
+	s := awake()
+	// Wall follower
+	dir := rand.Intn(4) + 1
+	for true {
+		dir = chooseDir(s, dir)
+		var err error
+		s, err = moveDir(dir)
+		if err == mazelib.ErrVictory {
+			return
+		}
+	}
+}
 
-	//TODO: Write your solver algorithm here
+func canMove(s mazelib.Survey, dir int) bool {
+	switch dir {
+	case mazelib.N:
+		return !s.Top
+	case mazelib.S:
+		return !s.Bottom
+	case mazelib.E:
+		return !s.Right
+	case mazelib.W:
+		return !s.Left
+	}
+	panic("dir out of range")
+}
 
+func moveDir(dir int) (mazelib.Survey, error) {
+	switch dir {
+	case mazelib.N:
+		return Move("up")
+	case mazelib.S:
+		return Move("down")
+	case mazelib.E:
+		return Move("right")
+	case mazelib.W:
+		return Move("left")
+	}
+	panic("dir out of range")
+}
+
+func chooseDir(s mazelib.Survey, dir int) int {
+	for i := -1; i < 4; i++ {
+		d := ((4 + dir - 1 + i) % 4) + 1
+		if canMove(s, d) {
+			return d
+		}
+	}
+	panic("fully closed cell")
 }

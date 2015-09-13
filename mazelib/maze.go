@@ -50,8 +50,8 @@ type Survey struct {
 
 const (
 	N = 1
-	S = 2
-	E = 3
+	S = 3
+	E = 2
 	W = 4
 )
 
