@@ -25,9 +25,9 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/golangchallenge/gc6/mazelib"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"github.com/tbroyer/golangchallenge-gc6/mazelib"
 )
 
 type Maze struct {

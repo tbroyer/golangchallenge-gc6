@@ -22,9 +22,9 @@ import (
 	"io/ioutil"
 	"net/http"
 
-	"github.com/golangchallenge/gc6/mazelib"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"github.com/tbroyer/golangchallenge-gc6/mazelib"
 )
 
 // Defining the icarus command.
