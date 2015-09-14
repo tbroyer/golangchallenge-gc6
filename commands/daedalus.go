@@ -110,7 +110,7 @@ func GetStartingPoint(c *gin.Context) {
 		fmt.Println(err)
 		os.Exit(-1)
 	}
-	mazelib.PrintMaze(currentMaze)
+	// mazelib.PrintMaze(currentMaze)
 
 	c.JSON(http.StatusOK, mazelib.Reply{Survey: startRoom})
 }
@@ -139,7 +139,7 @@ func MoveDirection(c *gin.Context) {
 		return
 	}
 
-	mazelib.PrintMaze(currentMaze)
+	//	mazelib.PrintMaze(currentMaze)
 
 	s, e := currentMaze.LookAround()
 
